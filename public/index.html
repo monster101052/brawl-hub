@@ -1,0 +1,618 @@
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brawl Hub - Поиск Команды</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
+
+        :root {
+            --bs-blue: #182b4a;
+            --bs-yellow: #f1c40f;
+            --bs-orange: #e67e22;
+            --bs-green: #27ae60;
+            --bs-red: #e74c3c;
+        }
+
+        body {
+            background: linear-gradient(rgba(24, 43, 74, 0.85), rgba(24, 43, 74, 0.85)), 
+                        url('https://images8.alphacoders.com/105/1050587.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            font-family: 'Lilita One', cursive;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--bs-yellow);
+        }
+
+        header h2 { margin: 0; color: var(--bs-yellow); text-shadow: 2px 2px 0px #d35400; }
+
+        .auth-box input {
+            padding: 8px; border-radius: 8px; border: none; margin-right: 5px; font-weight: bold;
+        }
+
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+        h1 {
+            font-size: 3.5em; color: var(--bs-yellow);
+            text-shadow: 4px 4px 0px #d35400, 6px 6px 15px rgba(0,0,0,0.5);
+            margin: 10px 0;
+        }
+
+        /* ДВУХКОЛОНОЧНЫЙ МАКЕТ СВЕРХУ */
+        .main-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .left-column {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .right-column {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        /* Сетка режимов */
+        #modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .mode-card {
+            background: rgba(41, 128, 185, 0.9);
+            border: 4px solid #fff;
+            border-radius: 20px;
+            padding: 15px; cursor: pointer;
+            transition: 0.2s ease-in-out;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4);text-align: center;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            background: var(--bs-orange);
+            border-color: var(--bs-yellow);
+        }
+
+        .mode-card img { width: 80px; height: 80px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4)); }
+
+        /* Окно детальной статистики */
+        .stats-modal {
+            display: none;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1d2b44 0%, #080f1a 100%);
+            border: 6px solid var(--bs-yellow); border-radius: 25px;
+            padding: 30px; width: 90%; max-width: 450px; z-index: 1000;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .stat-row {
+            display: flex; justify-content: space-between;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 8px 0; padding: 12px 15px; border-radius: 12px;
+            font-size: 1.15em; border-bottom: 2px solid rgba(0,0,0,0.2);
+        }
+
+        .best-brawler {
+            background: radial-gradient(circle, var(--bs-orange) 0%, #d35400 100%);
+            border: 3px solid var(--bs-yellow); border-radius: 15px;
+            padding: 15px; margin-top: 15px;
+        }
+
+        /* Кнопки */
+        button {
+            background: var(--bs-green); color: white; border: none;
+            border-bottom: 5px solid #1e8449; padding: 10px 20px;
+            border-radius: 12px; font-family: 'Lilita One'; font-size: 1.1em;
+            cursor: pointer; text-transform: uppercase; transition: 0.1s;
+        }
+
+        button:active { transform: translateY(4px); border-bottom: none; }
+        .btn-red { background: var(--bs-red); border-bottom-color: #c0392b; }
+        .btn-report { background: var(--bs-red); border-bottom-color: #c0392b; font-size: 0.9em; padding: 6px 12px; }
+
+        /* ОБНОВЛЕННЫЙ ЧАТ НАВЕРХУ */
+        #chat-widget {
+            background: rgba(10, 20, 38, 0.95);
+            border: 4px solid var(--bs-yellow);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            height: 350px;
+        }#chat-header { background: var(--bs-yellow); color: #222; padding: 12px; font-size: 1.2em; font-weight: bold; text-align: center; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 15px; text-align: left; font-size: 0.95em; line-height: 1.4; }
+        #chat-form { display: flex; border-top: 2px solid var(--bs-yellow); }
+        #chat-form input { flex: 1; border: none; padding: 12px; font-size: 1em; outline: none; }
+        #chat-form button { border-radius: 0; border: none; padding: 0 20px; }
+
+        /* Карточка поста с информацией "О себе" */
+        .post-card {
+            background: rgba(255, 255, 255, 0.95); color: #333;
+            border-radius: 18px; padding: 20px; margin: 15px auto; max-width: 650px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-left: 10px solid var(--bs-orange);
+            text-align: left;
+        }
+
+        .post-info-bio {
+            margin-top: 8px;
+            font-size: 0.95em;
+            color: #555;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--bs-yellow);
+            font-style: italic;
+        }
+
+        input[type="text"] {
+            padding: 12px; border-radius: 10px; border: 2px solid #ccc; font-size: 1em; margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка авторизации -->
+    <header>
+        <h2>BRAWL HUB</h2>
+        <divclass="auth-box">
+            <div id="user-logged" style="display:none;">
+                Привет, <span id="username-display" style="color:var(--bs-yellow)"></span>! 
+                <button class="btn-red" onclick="logout()" style="padding: 5px 12px;">Выйти</button>
+            </div>
+            <div id="user-guest">
+                <input type="text" id="auth-username" placeholder="Логин">
+                <input type="password" id="auth-password" placeholder="Пароль" style="padding: 8px; border-radius:8px; border:none; margin-right:5px;">
+                <button onclick="login()">Вход</button>
+                <button onclick="register()" style="background:var(--bs-orange); border-bottom-color:#b35d15;">Рег</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>BRAWL HUB</h1>
+
+        <!-- ЭКРАН РЕЖИМОВ И ЧАТА (ГЛАВНЫЙ ЭКРАН) -->
+        <div id="modes-screen">
+            <div class="main-layout">
+                <!-- Левая колонка: Выбор режимов -->
+                <div class="left-column">
+                    <h3 style="margin-top:0; color:var(--bs-yellow)">ВЫБЕРИТЕ РЕЖИМ ДЛЯ ПОИСКА ТИМЕЙТОВ:</h3>
+                    <div id="modes">
+                        <div class="mode-card" onclick="showLobby('Gem Grab')"><img src="gem.png"><div>ЗАХВАТ</div></div>
+                        <div class="mode-card" onclick="showLobby('Brawl Ball')"><img src="ball.png"><div>БРОУЛБОЛ</div></div>
+                        <div class="mode-card" onclick="showLobby('Showdown')"><img src="shd.png"><div>ШД СОЛО</div></div>
+                        <div class="mode-card" onclick="showLobby('Knockout')"><img src="knock.png"><div>НОКАУТ</div></div>
+                        <div class="mode-card" onclick="showLobby('Hot Zone')"><img src="hot.png"><div>ГОРЯЧАЯ ЗОНА</div></div>
+                        <div class="mode-card" onclick="showLobby('Volley Brawl')"><img src="aero.png"><div>АЭРОБОЙ</div></div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Глобальный чат -->
+                <div class="right-column">
+                    <div id="chat-widget">
+                        <div id="chat-header">ГЛОБАЛЬНЫЙ ЧАТ</div>
+                        <div id="chat-messages">
+                            <div style="color: #7f8c8d; text-align: center; margin-top: 50px;">Для просмотра чата и общения войдите в аккаунт сверху страницы.</div>
+                        </div>
+                        <div id="chat-form" style="display:none;">
+                            <input type="text" id="chat-input-msg" placeholder="Напишите сообщение...">
+                            <button onclick="sendChatMessage()">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ЛОББИ -->
+        <div id="lobby-screen" style="display:none;">
+            <button class="btn-red" onclick="location.reload()">⬅ НАЗАД В МЕНЮ</button>
+            <h2 id="current-mode-title" style="font-size: 3em; color: var(--bs-yellow); margin: 20px 0;"></h2>
+
+            <div id="posts-list"></div>
+
+            <!-- Форма создания -->
+            <div style="background: rgba(0,0,0,0.6); padding: 30px; border-radius: 25px; margin-top: 40px; border: 3px solid var(--bs-yellow);">
+                <h3>ОСТАВИТЬ ЗАЯВКУ В ЛОББИ</h3>
+                <input type="text" id="post-name" placeholder="Твой ник">
+                <input type="text" id="post-tag" placeholder="Твой тег (#...)">
+                <input type="text" id="post-contact" placeholder="Telegram (без @)">
+                <input type="text" id="post-bio" placeholder="Пару слов о себе \text-align: center;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            background: var(--bs-orange);
+            border-color: var(--bs-yellow);
+        }
+
+        .mode-card img { width: 80px; height: 80px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4)); }
+
+        /* Окно детальной статистики */
+        .stats-modal {
+            display: none;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1d2b44 0%, #080f1a 100%);
+            border: 6px solid var(--bs-yellow); border-radius: 25px;
+            padding: 30px; width: 90%; max-width: 450px; z-index: 1000;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .stat-row {
+            display: flex; justify-content: space-between;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 8px 0; padding: 12px 15px; border-radius: 12px;
+            font-size: 1.15em; border-bottom: 2px solid rgba(0,0,0,0.2);
+        }
+
+        .best-brawler {
+            background: radial-gradient(circle, var(--bs-orange) 0%, #d35400 100%);
+            border: 3px solid var(--bs-yellow); border-radius: 15px;
+            padding: 15px; margin-top: 15px;
+        }
+
+        /* Кнопки */
+        button {
+            background: var(--bs-green); color: white; border: none;
+            border-bottom: 5px solid #1e8449; padding: 10px 20px;
+            border-radius: 12px; font-family: 'Lilita One'; font-size: 1.1em;
+            cursor: pointer; text-transform: uppercase; transition: 0.1s;
+        }
+
+        button:active { transform: translateY(4px); border-bottom: none; }
+        .btn-red { background: var(--bs-red); border-bottom-color: #c0392b; }
+        .btn-report { background: var(--bs-red); border-bottom-color: #c0392b; font-size: 0.9em; padding: 6px 12px; }
+
+        /* ОБНОВЛЕННЫЙ ЧАТ НАВЕРХУ */
+        #chat-widget {
+            background: rgba(10, 20, 38, 0.95);
+            border: 4px solid var(--bs-yellow);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            height: 350px;
+        }
+
+        #chat-header { background: var(--bs-yellow); color: #222; padding: 12px; font-size: 1.2em; font-weight: bold; text-align: center; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 15px; text-align: left; font-size: 0.95em; line-height: 1.4; }
+        #chat-form { display: flex; border-top: 2px solid var(--bs-yellow); }
+        #chat-form input { flex: 1; border: none; padding: 12px; font-size: 1em; outline: none; }
+        #chat-form button { border-radius: 0; border: none; padding: 0 20px; }
+
+        /* Карточка поста с информацией "О себе" */
+        .post-card {
+            background: rgba(255, 255, 255, 0.95); color: #333;
+            border-radius: 18px; padding: 20px; margin: 15px auto; max-width: 650px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-left: 10px solid var(--bs-orange);
+            text-align: left;
+        }
+
+        .post-info-bio {
+            margin-top: 8px;
+            font-size: 0.95em;
+            color: #555;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--bs-yellow);
+            font-style: italic;
+        }
+
+        input[type="text"] {
+            padding: 12px; border-radius: 10px; border: 2px solid #ccc; font-size: 1em; margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка авторизации -->
+    <header>
+        <h2>BRAWL HUB</h2>
+        <div class="au
+th-box">
+            <div id="user-logged" style="display:none;">
+                Привет, <span id="username-display" style="color:var(--bs-yellow)"></span>! 
+                <button class="btn-red" onclick="logout()" style="padding: 5px 12px;">Выйти</button>
+            </div>
+            <div id="user-guest">
+                <input type="text" id="auth-username" placeholder="Логин">
+                <input type="password" id="auth-password" placeholder="Пароль" style="padding: 8px; border-radius:8px; border:none; margin-right:5px;">
+                <button onclick="login()">Вход</button>
+                <button onclick="register()" style="background:var(--bs-orange); border-bottom-color:#b35d15;">Рег</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>BRAWL HUB</h1>
+
+        <!-- ЭКРАН РЕЖИМОВ И ЧАТА (ГЛАВНЫЙ ЭКРАН) -->
+        <div id="modes-screen">
+            <div class="main-layout">
+                <!-- Левая колонка: Выбор режимов -->
+                <div class="left-column">
+                    <h3 style="margin-top:0; color:var(--bs-yellow)">ВЫБЕРИТЕ РЕЖИМ ДЛЯ ПОИСКА ТИМЕЙТОВ:</h3>
+                    <div id="modes">
+                        <div class="mode-card" onclick="showLobby('Gem Grab')"><img src="gem.png"><div>ЗАХВАТ</div></div>
+                        <div class="mode-card" onclick="showLobby('Brawl Ball')"><img src="ball.png"><div>БРОУЛБОЛ</div></div>
+                        <div class="mode-card" onclick="showLobby('Showdown')"><img src="shd.png"><div>ШД СОЛО</div></div>
+                        <div class="mode-card" onclick="showLobby('Knockout')"><img src="knock.png"><div>НОКАУТ</div></div>
+                        <div class="mode-card" onclick="showLobby('Hot Zone')"><img src="hot.png"><div>ГОРЯЧАЯ ЗОНА</div></div>
+                        <div class="mode-card" onclick="showLobby('Volley Brawl')"><img src="aero.png"><div>АЭРОБОЙ</div></div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Глобальный чат -->
+                <div class="right-column">
+                    <div id="chat-widget">
+                        <div id="chat-header">ГЛОБАЛЬНЫЙ ЧАТ</div>
+                        <div id="chat-messages">
+                            <div style="color: #7f8c8d; text-align: center; margin-top: 50px;">Для просмотра чата и общения войдите в аккаунт сверху страницы.</div>
+                        </div>
+                        <div id="chat-form" style="display:none;">
+                            <input type="text" id="chat-input-msg" placeholder="Напишите сообщение...">
+                            <button onclick="sendChatMessage()">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ЛОББИ -->
+        <div id="lobby-screen" style="display:none;">
+            <button class="btn-red" onclick="location.reload()">⬅ НАЗАД В МЕНЮ</button>
+            <h2 id="current-mode-title" style="font-size: 3em; color: var(--bs-yellow); margin: 20px 0;"></h2>
+
+            <div id="posts-list"></div>
+
+            <!-- Форма создания -->
+            <div style="background: rgba(0,0,0,0.6); padding: 30px; border-radius: 25px; margin-top: 40px; border: 3px solid var(--bs-yellow);">
+                <h3>ОСТАВИТЬ ЗАЯВКУ В ЛОББИ</h3>
+                <input type="text" id="post-name" placeholder="Твой ник">
+                <input type="text" id="post-tag" placeholder="Твой тег (#...)">
+                <input type="text" id="post-contact" placeholder="Telegram (без @)">
+                <input type="text" id="post-bio" placeholder="Пару слов о себе (любимые бр
+авлеры, требования к тиме...)" style="width: 80%;">
+                <br><br>
+                <button onclick="createPost()">ОПУБЛИКОВАТЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО СТАТИСТИКИ -->
+    <div id="stats-modal" class="stats-modal">
+        <h2 style="color:var(--bs-yellow); margin-top:0;">ПРОФИЛЬ BRAWL STARS</h2>
+        <div id="stats-content"></div>
+        <br>
+        <button class="btn-red" onclick="closeStats()">ЗАКРЫТЬ</button>
+    </div>
+
+    <script>
+        let currentUser = localStorage.getItem('username') || null;
+        let currentMode = "";
+
+        if (currentUser) { showUserLoggedIn(); }
+
+        // --- АВТОРИЗАЦИЯ ---
+        async function register() {
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
+            const res = await fetch('/api/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.error); else alert("Регистрация успешна! Теперь выполните вход.");
+        }
+
+        async function login() {
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else {
+                currentUser = data.username;
+                localStorage.setItem('username', currentUser);
+                showUserLoggedIn();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('username');
+            location.reload();
+        }
+
+        function showUserLoggedIn() {
+            document.getElementById('user-guest').style.display = 'none';
+            document.getElementById('user-logged').style.display = 'block';
+            document.getElementById('username-display').innerText = currentUser;
+            document.getElementById('chat-form').style.display = 'flex';
+            startChatUpdates();
+        }
+
+        // --- ЛОББИ РЕЖИМОВ ---
+        function showLobby(mode) {
+            currentMode = mode;
+            document.getElementById('modes-screen').style.display = 'none';
+            document.getElementById('lobby-screen').style.display = 'block';
+            document.getElementById('current-mode-title').innerText = mode.toUpperCase();
+            loadPosts();
+        }
+
+        async function loadPosts() {
+            const res = await fetch('/api/posts');
+            const data = await res.json();
+            const list = document.getElementById('posts-list');
+            list.innerHTML = "";
+
+            const filtered = data.filter(p => p.mode === currentMode);
+            if (filtered.length === 0) {
+                list.innerHTML = "<p style='font-size:1.5em; opacity:0.7; text-align:center;'>Пока здесь никого нет. Стань первым!</p>";
+                return;
+            }
+
+            filtered.forEach(post => {
+                list.innerHTML += `
+                    <div class="post-card">
+                        <div style="max-width: 70%;">
+                            <span style="font-size:1.4em; font-weight:bold;">👤 ${post.name}</span><br>
+                            <span style="color:#7f8c8d; font-size:0.9em;">Тег: ${post.tag}</span>
+                            <div class="post
+-info-bio">"${post.bio}"</div>
+                        </div>
+                        <div>
+                            <button onclick="viewStats('${post.tag}', '${post.contact}')" style="margin-bottom: 5px; width: 100%;">ПРОФИЛЬ</button><br>
+                            <button class="btn-report" onclick="reportPlayer('${post.tag}', '${post.name}')" style="width: 100%;">⚠️ ЖАЛОБА</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function createPost() {
+            const name = document.getElementById('post-name').value;
+            const tag = document.getElementById('post-tag').value;
+            const contact = document.getElementById('post-contact').value;
+            const bio = document.getElementById('post-bio').value;
+
+            if(!name || !tag) return alert("Введите ник и тег профиля!");
+
+            const res = await fetch('/api/posts', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, tag, contact, mode: currentMode, bio })
+            });
+            const data = await res.json();
+            if(data.error) return alert(data.error);
+
+            document.getElementById('post-name').value = "";
+            document.getElementById('post-tag').value = "";
+            document.getElementById('post-contact').value = "";
+            document.getElementById('post-bio').value = "";
+            loadPosts();
+        }
+
+        // --- ПОКАЗ ДЕТАЛЬНОЙ СТАТИСТИКИ ---
+        async function viewStats(tag, contact) {
+            try {
+                const res = await fetch('/api/player/' + tag.replace('#', ''));
+                const data = await res.json();
+
+                if (data.error) return alert(data.error);
+
+                let bestBrawler = data.brawlers.reduce((prev, curr) => (prev.highestTrophies > curr.highestTrophies) ? prev : curr);
+
+                const modal = document.getElementById('stats-modal');
+                const content = document.getElementById('stats-content');
+
+                content.innerHTML = `
+                    <div class="stat-row"><span>НИКНЕЙМ:</span> <span style="color:var(--bs-yellow);">${data.name}</span></div>
+                    <div class="stat-row"><span>ТЕКУЩИЕ КУБКИ:</span> <span>${data.trophies} 🏆</span></div>
+                    <div class="stat-row"><span>РЕКОРД КУБКОВ:</span> <span>${data.highestTrophies} 👑</span></div>
+                    <div class="stat-row"><span>УРОВЕНЬ ОПЫТА:</span> <span>${data.expLevel} ⭐</span></div>
+                    <div class="stat-row"><span>ПОБЕДЫ 3v3:</span> <span>${data['3vs3Victories']}</span></div>
+                    <div class="stat-row"><span>ПОБЕДЫ СОЛО ШД:</span> <span>${data.soloVictories}</span></div>
+                    
+                    <div class="best-brawler">
+                        <div style="font-size:0.85em; opacity:0.8;">ЛУЧШИЙ ПЕРСОНАЖ:</div>
+                        <div style="font-size:1.6em; margin:5px 0;">${bestBrawler.name.toUpperCase()}</div>
+                        <div>МАКС. КУБКИ: ${bestBrawler.highestTrophies} 🏆</div>
+                    </div>
+                    ${contact ? `
+                        <br>
+                        <a href="https://t.me/${contact.replace('@', '')}" target="_blank" style="text-decoration:none;">
+                            <button style="width:100%; background:#0088cc; border-bottom-color:#005580;">✈ НАПИСАТЬ В TELEGRAM</button>
+                        </a>
+                    ` : ''}
+                `;
+                modal.style.display = 'block';
+            } catch (e) {
+                alert("Не удалось связаться с сервером или профиль не найден.");}
+        }
+
+        function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
+
+        // --- ЖАЛОБЫ ---
+        async function reportPlayer(targetTag, targetName) {
+            const reason = prompt(`Укажите причину жалобы на игрока ${targetName} (${targetTag}):`);
+            if (!reason) return;
+
+            const res = await fetch('/api/reports', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reporter: currentUser,
+                    targetTag, targetName, reason
+                })
+            });
+
+            if (res.ok) alert("Жалоба отправлена! Мы заблокируем нарушителя в случае подтверждения.");
+        }
+
+        // --- ЧАТ ---
+        async function sendChatMessage() {
+            const textInput = document.getElementById('chat-input-msg');
+            const text = textInput.value;
+            if (!text || !currentUser) return;
+
+            const res = await fetch('/api/messages', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser, text })
+            });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+
+            textInput.value = "";
+            loadChatMessages();
+        }
+
+        async function loadChatMessages() {
+            const res = await fetch('/api/messages');
+            const messages = await res.json();
+            const container = document.getElementById('chat-messages');
+            
+            if (messages.length === 0) {
+                container.innerHTML = "<div style='color:#7f8c8d; text-align:center; margin-top:50px;'>Сообщений пока нет. Начните общение!</div>";
+                return;
+            }
+
+            container.innerHTML = messages.map(m => `
+                <div style="margin-bottom:8px;">
+                    <b style="color:var(--bs-yellow);">${m.username}:</b> ${m.text}
+                    <span style="font-size:0.75em; opacity:0.4; float:right;">${m.time}</span>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function startChatUpdates() {
+            loadChatMessages();
+            setInterval(loadChatMessages, 3000);
+        }
+    </script>
+</body>
+</html>
