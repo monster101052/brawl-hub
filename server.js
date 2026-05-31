@@ -1,29 +1,80 @@
+
 require('dotenv').config();
+
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+helmet({
+contentSecurityPolicy: false 
+ })
+);
+
+app.use(express.json({
+    limit: '100kb'
+}));
+
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGIN?.split(',') || ['http://localhost:3000']
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
-
-const API_KEY = process.env.BRAWL_API_KEY;
-
+const API_KEY =process.env.BRAWL_API_KEY;
+const JWT_SECRET = process.env.JWT_SECRET;
 const msgLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
+    windowMs: 60 * 1000,
     max: 30,
-    message: { error: "Слишком много запросов. Пожалуйста, подождите немного." }
+    message: {
+        error: 'Слишком много запросов'
+    }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        error: 'Слишком много попыток входа'
+    }
 });
 
 let posts = [];
 let reports = [];
 let users = [];
 let messages = [];
+
+function auth(req, res, next) {
+    const header = req.headers.authorization;
+
+    if (!header) {
+        return res.status(401).json({
+            error: 'Нет токена'
+        });
+    }
+
+    try {
+        const token = header.split(' ')[1];
+
+        req.user = jwt.verify(
+            token,
+            JWT_SECRET
+        );
+
+        next();
+    } catch {
+        return res.status(401).json({
+            error: 'Недействительный токен'
+        });
+    }
+}
 
 function sanitize(text) {
     if (typeof text !== 'string') return '';
@@ -35,35 +86,96 @@ function hashPassword(password) {
 }
 
 // --- API: АВТОРИЗАЦИЯ ---
-app.post('/api/register', (req, res) => {
+app.post('/api/register', authLimiter, async (req, res) => {
     const username = sanitize(req.body.username).trim();
     const password = req.body.password;
 
-    if (!username || !password || username.length < 3 || password.length < 4) {
-        return res.status(400).json({ error: "Логин (мин. 3 симв.) и пароль (мин. 4 симв.) обязательны!" });
+    if (
+        !username ||
+        username.length < 3 ||
+        username.length > 30
+    ) {
+        return res.status(400).json({
+            error: 'Логин должен быть от 3 до 30 символов'
+        });
     }
 
-    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return res.status(400).json({ error: "Этот никнейм уже занят!" });
+    if (
+        !password ||
+        password.length < 8
+    ) {
+        return res.status(400).json({
+            error: 'Пароль минимум 8 символов'
+        });
     }
+
+    if (
+        users.find(
+            u =>
+                u.username.toLowerCase() ===
+                username.toLowerCase()
+        )
+    ) {
+        return res.status(400).json({
+            error: 'Этот никнейм уже занят'
+        });
+    }
+
+    const passwordHash =
+        await bcrypt.hash(password, 12);
 
     users.push({
         username,
-        passwordHash: hashPassword(password)
+        passwordHash
     });
-    res.json({ success: true });
+
+    res.json({
+        success: true
+    });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', authLimiter, async (req, res) => {
     const username = sanitize(req.body.username).trim();
     const password = req.body.password;
 
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user || user.passwordHash !== hashPassword(password)) {
-        return res.status(401).json({ error: "Неверный логин или пароль!" });
+    const user = users.find(
+        u =>
+            u.username.toLowerCase() ===
+            username.toLowerCase()
+    );
+
+    if (!user) {
+        return res.status(401).json({
+            error: 'Неверный логин или пароль'
+        });
     }
 
-    res.json({ username: user.username });
+    const validPassword =
+        await bcrypt.compare(
+            password,
+            user.passwordHash
+        );
+
+    if (!validPassword) {
+        return res.status(401).json({
+            error: 'Неверный логин или пароль'
+        });
+    }
+
+    const token = jwt.sign(
+        {
+            username: user.username
+        },
+        JWT_SECRET,
+        {
+            expiresIn: '7d'
+        }
+    );
+
+    res.json({
+        username: user.username,
+        token
+    });
 });
 
 // --- API: ЧАТ ---
@@ -82,22 +194,49 @@ app.post('/api/messages', msgLimiter, (req, res) => {
     if (messages.length > 50) messages.shift();
 
     res.json(newMessage);
-});// --- API: BRAWL STARS ---
-app.get('/api/player/:tag', async (req, res) => {
-    try {
-        let tag = req.params.tag;
-        if (!tag.startsWith('%23')) {
-            tag = `%23${tag.replace('#', '')}`;
-        }
-        const response = await axios.get(`https://api.brawlstars.com/v1/players/${tag}`, {
-            headers: { 'Authorization': `Bearer ${API_KEY}` }
-        });
-        res.json(response.data);
-    } catch (e) {
-        res.status(500).json({ error: "Ошибка при получении профиля. Проверьте тег." });
-    }
 });
 
+// --- API: BRAWL STARS ---
+
+app.get('/api/player/:tag', async (req, res) => {
+    try {
+        if (!API_KEY) {
+            return res.status(500).json({
+                error: 'BRAWL_API_KEY не найден в .env'
+            });
+        }
+
+        let tag = req.params.tag.toUpperCase();
+
+        if (tag.startsWith('#')) {
+            tag = tag.substring(1);
+        }
+
+        tag = `%23${tag}`;
+
+        const response = await axios.get(
+            `https://api.brawlstars.com/v1/players/${tag}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${API_KEY}`
+                },
+                timeout: 10000
+            }
+        );
+
+        res.json(response.data);
+
+    } catch (e) {
+        console.error('=== BRAWL API ERROR ===');
+        console.error('Status:', e.response?.status);
+        console.error('Data:', e.response?.data);
+        console.error('Message:', e.message);
+
+        res.status(e.response?.status || 500).json({
+            error: e.response?.data?.reason || e.message
+        });
+    }
+});
 // --- API: ПОСТЫ ---
 app.get('/api/posts', (req, res) => res.json(posts));
 
