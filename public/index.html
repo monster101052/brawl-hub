@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -200,8 +198,9 @@
                     <h3 style="margin-top:0; color:var(--bs-yellow)">ВЫБЕРИТЕ РЕЖИМ ДЛЯ ПОИСКА ТИМЕЙТОВ:</h3>
                     <div id="modes">
                         <div class="mode-card" onclick="showLobby('Gem Grab')"><img src="gem.png"><div>ЗАХВАТ</div></div>
-                        <div class="mode-card" onclick="showLobby('Brawl Ball')"><img src="ball.png"><div>БРОУЛБОЛ</div></div>
-                        <div class="mode-card" onclick="showLobby('Showdown')"><img src="shd.png"><div>ШД СОЛО</div></div>
+                        <div class="mode-card"    onclick="showLobby('Brawl Ball')"><img src="ball.png"><div>БРОУЛБОЛ</div></div>
+                        <div class="mode-card" onclick="showLobby('Showdown')"><img src="shd.png"><div>ШД
+любое </div></div>
                         <div class="mode-card" onclick="showLobby('Knockout')"><img src="knock.png"><div>НОКАУТ</div></div>
                         <div class="mode-card" onclick="showLobby('Hot Zone')"><img src="hot.png"><div>ГОРЯЧАЯ ЗОНА</div></div>
                         <div class="mode-card" onclick="showLobby('Volley Brawl')"><img src="aero.png"><div>АЭРОБОЙ</div></div>
@@ -231,15 +230,20 @@
 
             <div id="posts-list"></div>
 
+
             <!-- Форма создания -->
-            <div style="background: rgba(0,0,0,0.6); padding: 30px; border-radius: 25px; margin-top: 40px; border: 3px solid var(--bs-yellow);">
+             <div style="background: rgba(0,0,0,0.6); padding: 30px; border-radius: 25px; margin-top: 40px; border: 3px solid var(--bs-yellow);">
                 <h3>ОСТАВИТЬ ЗАЯВКУ В ЛОББИ</h3>
                 <input type="text" id="post-name" placeholder="Твой ник">
                 <input type="text" id="post-tag" placeholder="Твой тег (#...)">
                 <input type="text" id="post-contact" placeholder="Telegram (без @)">
-                <input type="text" id="post-bio" placeholder="Пару слов о себе \text-align: center;
-        }
+                <input type="text" id="post-bio" placeholder="Пару слов о себе..." style="width: 80%;">
+     <br><br>
+                <button onclick="createPost()">ОПУБЛИКОВАТЬ</button>
 
+
+        <style>
+            // *hgf*//
         .mode-card:hover {
             transform: translateY(-5px) scale(1.03);
             background: var(--bs-orange);
@@ -327,24 +331,6 @@
     </style>
 </head>
 <body>
-
-    <!-- Шапка авторизации -->
-    <header>
-        <h2>BRAWL HUB</h2>
-        <div class="au
-th-box">
-            <div id="user-logged" style="display:none;">
-                Привет, <span id="username-display" style="color:var(--bs-yellow)"></span>! 
-                <button class="btn-red" onclick="logout()" style="padding: 5px 12px;">Выйти</button>
-            </div>
-            <div id="user-guest">
-                <input type="text" id="auth-username" placeholder="Логин">
-                <input type="password" id="auth-password" placeholder="Пароль" style="padding: 8px; border-radius:8px; border:none; margin-right:5px;">
-                <button onclick="login()">Вход</button>
-                <button onclick="register()" style="background:var(--bs-orange); border-bottom-color:#b35d15;">Рег</button>
-            </div>
-        </div>
-    </header>
 
     <div class="container">
         <h1>BRAWL HUB</h1>
