@@ -13,11 +13,7 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-app.use(
-helmet({
-contentSecurityPolicy: false 
- })
-);
+
 
 app.use(express.json({
     limit: '100kb'
